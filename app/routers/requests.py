@@ -159,6 +159,38 @@ async def cancel_request(
     return request_row(r)
 
 
+@router.post("/requests/{request_id}/complete")
+async def complete_request(
+    request_id: int,
+    shop: Annotated[Shop, Depends(require_shop)],
+    conn: Annotated[asyncpg.Connection, Depends(tx)],
+) -> dict:
+    row = await conn.fetchrow(
+        """
+        select r.status,
+               (q.shop_id = $2) as holds_accepted
+        from public.requests r
+        left join public.quotes q on q.id = r.accepted_quote_id
+        where r.id = $1
+          and exists (select 1 from public.request_notifications rn
+                      where rn.request_id = r.id and rn.shop_id = $2)
+        for update of r
+        """,
+        request_id,
+        shop.id,
+    )
+    if row is None:
+        raise not_found("request not found")
+    if row["status"] != "accepted" or not row["holds_accepted"]:
+        raise invalid_state("request is not accepted by your shop")
+    r = await conn.fetchrow(
+        f"update public.requests set status = 'completed' where id = $1 returning {REQ_COLS}",
+        request_id,
+    )
+    assert r is not None
+    return request_row(r)
+
+
 @router.post("/requests/{request_id}/seen", status_code=204)
 async def mark_seen(
     request_id: int,

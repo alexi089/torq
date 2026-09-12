@@ -162,3 +162,43 @@ async def test_seen_without_notification_is_404(client, make_user, make_shop_use
     req = (await make_request(client, driver, vehicle_id)).json()
     resp = await client.post(f"/v1/requests/{req['id']}/seen", headers=auth(shop))
     assert resp.status_code == 404
+
+
+async def test_complete_by_accepted_shop(client, make_user, make_shop_user):
+    from tests.test_quotes import QUOTE, setup_request
+
+    driver, (shop,), req = await setup_request(client, make_user, make_shop_user)
+    q = (
+        await client.post(f"/v1/requests/{req['id']}/quotes", json=QUOTE, headers=auth(shop))
+    ).json()
+    await client.post(f"/v1/quotes/{q['id']}/accept", headers=auth(driver))
+    resp = await client.post(f"/v1/requests/{req['id']}/complete", headers=auth(shop))
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "completed"
+
+
+async def test_complete_by_notified_but_losing_shop_is_409(client, make_user, make_shop_user):
+    from tests.test_quotes import QUOTE, setup_request
+
+    driver, shops, req = await setup_request(client, make_user, make_shop_user, n_shops=2)
+    q1 = (
+        await client.post(f"/v1/requests/{req['id']}/quotes", json=QUOTE, headers=auth(shops[0]))
+    ).json()
+    await client.post(f"/v1/requests/{req['id']}/quotes", json=QUOTE, headers=auth(shops[1]))
+    await client.post(f"/v1/quotes/{q1['id']}/accept", headers=auth(driver))
+    resp = await client.post(f"/v1/requests/{req['id']}/complete", headers=auth(shops[1]))
+    assert resp.status_code == 409
+    assert resp.json()["error"]["code"] == "invalid_state"
+
+
+async def test_complete_by_unnotified_shop_is_404(client, make_user, make_shop_user):
+    from tests.test_quotes import QUOTE, setup_request
+
+    driver, (shop,), req = await setup_request(client, make_user, make_shop_user)
+    q = (
+        await client.post(f"/v1/requests/{req['id']}/quotes", json=QUOTE, headers=auth(shop))
+    ).json()
+    await client.post(f"/v1/quotes/{q['id']}/accept", headers=auth(driver))
+    outsider = await make_shop_user(DRIVER_AT["lat"] + 1.0, DRIVER_AT["lng"], alert_radius_mi=2)
+    resp = await client.post(f"/v1/requests/{req['id']}/complete", headers=auth(outsider))
+    assert resp.status_code == 404
