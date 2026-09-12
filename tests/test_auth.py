@@ -1,7 +1,5 @@
 import uuid
 
-import pytest
-
 from tests.tokens import mint_token
 
 
@@ -58,7 +56,6 @@ async def test_real_supabase_token_works(client, make_user):
     assert resp.status_code == 200
 
 
-@pytest.mark.xfail(reason="route lands in task 9", strict=True)
 async def test_shop_route_without_shop_is_403(client, make_user):
     user = await make_user()
     resp = await client.patch(

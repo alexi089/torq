@@ -90,3 +90,35 @@ def make_user(supabase_url: str, service_key: str) -> UserFactory:
         return {"id": user_id, "email": email, "token": token}
 
     return _make
+
+
+@pytest.fixture
+def make_shop_user(make_user, client):
+    async def _make(
+        lat: float,
+        lng: float,
+        *,
+        alert_radius_mi: int = 10,
+        online: bool = True,
+        name: str = "Shop",
+    ) -> dict:
+        user = await make_user(full_name=name)
+        headers = {"Authorization": f"Bearer {user['token']}"}
+        created = await client.post(
+            "/v1/shops",
+            json={
+                "name": name,
+                "phone": "+15145550000",
+                "address": "1 Test St",
+                "location": {"lat": lat, "lng": lng},
+                "alert_radius_mi": alert_radius_mi,
+            },
+            headers=headers,
+        )
+        created.raise_for_status()
+        shop = created.json()
+        if online:
+            await client.patch("/v1/shops/me", json={"is_online": True}, headers=headers)
+        return {**user, "shop_id": shop["id"]}
+
+    return _make
