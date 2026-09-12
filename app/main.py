@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from app.config import get_settings
 from app.db import create_pool
 from app.errors import register_handlers
-from app.routers import health
+from app.routers import health, profiles
 
 
 def create_app() -> FastAPI:
@@ -19,4 +19,5 @@ def create_app() -> FastAPI:
     app = FastAPI(title="torq-api", lifespan=lifespan)
     register_handlers(app)
     app.include_router(health.router)
+    app.include_router(profiles.router)
     return app
