@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from app.config import get_settings
 from app.db import create_pool
 from app.errors import register_handlers
-from app.routers import health, profiles
+from app.routers import health, profiles, vehicles
 
 
 def create_app() -> FastAPI:
@@ -20,4 +20,5 @@ def create_app() -> FastAPI:
     register_handlers(app)
     app.include_router(health.router)
     app.include_router(profiles.router)
+    app.include_router(vehicles.router)
     return app
