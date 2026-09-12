@@ -82,3 +82,20 @@ async def test_delete_me_shop_holding_accepted_quote_is_409(client, make_user, m
     await client.post(f"/v1/quotes/{q['id']}/accept", headers=auth(driver))
     resp = await client.request("DELETE", "/v1/me", headers=auth(shop))
     assert resp.status_code == 409
+
+
+async def test_delete_me_upstream_transport_failure_is_502(client, make_user, monkeypatch):
+    import httpx
+
+    async def boom(self, *args, **kwargs):
+        raise httpx.ConnectError("boom")
+
+    # Mock only at the external boundary: the admin API call itself.
+    monkeypatch.setattr(httpx.AsyncClient, "delete", boom)
+
+    driver = await make_user()
+    resp = await client.request(
+        "DELETE", "/v1/me", headers={"Authorization": f"Bearer {driver['token']}"}
+    )
+    assert resp.status_code == 502
+    assert resp.json()["error"]["code"] == "upstream_error"
