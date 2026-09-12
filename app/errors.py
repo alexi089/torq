@@ -30,6 +30,10 @@ def invalid_state(message: str) -> AppError:
     return AppError(409, "invalid_state", message)
 
 
+def validation_error(message: str) -> AppError:
+    return AppError(422, "validation_error", message)
+
+
 def _envelope(status: int, code: str, message: str) -> JSONResponse:
     return JSONResponse(status_code=status, content={"error": {"code": code, "message": message}})
 
