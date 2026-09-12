@@ -44,9 +44,7 @@ def _decode(token: str) -> dict:
             issuer=settings.supabase_url + "/auth/v1",
             options={"require": ["exp", "sub", "iss", "aud"]},
         )
-    except jwt.PyJWKClientError as e:
-        raise unauthorized() from e
-    except jwt.InvalidTokenError as e:
+    except (jwt.PyJWKClientError, jwt.InvalidTokenError) as e:
         raise unauthorized() from e
 
 
@@ -56,7 +54,14 @@ async def current_user(request: Request) -> CurrentUser:
     if scheme.lower() != "bearer" or not token:
         raise unauthorized()
     claims = _decode(token)
-    return CurrentUser(id=uuid.UUID(claims["sub"]))
+    try:
+        user_id = uuid.UUID(claims["sub"])
+    except ValueError as e:
+        # PyJWT's built-in "sub" validation only requires it be present and a
+        # string, not UUID-shaped -- a validly-signed token with a non-UUID
+        # sub must still fail as an auth error, not surface as a 500.
+        raise unauthorized() from e
+    return CurrentUser(id=user_id)
 
 
 async def require_shop(

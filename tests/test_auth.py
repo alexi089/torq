@@ -46,6 +46,12 @@ async def test_unknown_kid_is_401(client, make_user):
     assert resp.status_code == 401
 
 
+async def test_non_uuid_sub_is_401(client):
+    resp = await _me(client, mint_token("not-a-uuid"))
+    assert resp.status_code == 401
+    assert resp.json()["error"]["code"] == "unauthorized"
+
+
 async def test_real_supabase_token_works(client, make_user):
     user = await make_user()
     resp = await _me(client, user["token"])
