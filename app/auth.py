@@ -43,6 +43,10 @@ def _decode(token: str) -> dict:
             audience="authenticated",
             issuer=settings.supabase_url + "/auth/v1",
             options={"require": ["exp", "sub", "iss", "aud"]},
+            # tolerate clock skew between this host and the token issuer
+            # (container clocks, client clocks); exp is still enforced,
+            # just within this same margin.
+            leeway=10,
         )
     except (jwt.PyJWKClientError, jwt.InvalidTokenError) as e:
         raise unauthorized() from e
