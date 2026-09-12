@@ -118,7 +118,9 @@ def make_shop_user(make_user, client):
         created.raise_for_status()
         shop = created.json()
         if online:
-            await client.patch("/v1/shops/me", json={"is_online": True}, headers=headers)
+            toggled = await client.patch("/v1/shops/me", json={"is_online": True}, headers=headers)
+            toggled.raise_for_status()
+            assert toggled.json()["is_online"] is True
         return {**user, "shop_id": shop["id"]}
 
     return _make

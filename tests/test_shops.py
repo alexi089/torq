@@ -48,3 +48,13 @@ async def test_patch_shop_me_without_shop_is_403(client, make_user):
     user = await make_user()
     resp = await client.patch("/v1/shops/me", json={"is_online": True}, headers=auth(user))
     assert resp.status_code == 403
+
+
+async def test_make_shop_user_fixture_creates_online_shop(make_shop_user, db):
+    shop_user = await make_shop_user(45.5, -73.5)
+    assert shop_user["shop_id"] > 0
+    row = await db.fetchrow(
+        "select is_online from public.shops where id = $1", shop_user["shop_id"]
+    )
+    assert row is not None
+    assert row["is_online"] is True
