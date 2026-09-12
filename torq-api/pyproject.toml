@@ -1,0 +1,32 @@
+[project]
+name = "torq-api"
+version = "0.1.0"
+description = "Torq write-side API"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "asyncpg>=0.30",
+    "pyjwt[crypto]>=2.9",
+    "pydantic-settings>=2.5",
+    "httpx>=0.27",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "ruff>=0.6", "pyright>=1.1.380", "asgi-lifespan>=2"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.pyright]
+include = ["app", "tests"]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
