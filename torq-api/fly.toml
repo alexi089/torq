@@ -1,0 +1,20 @@
+app = "torq-api"
+primary_region = "yul"
+
+[build]
+
+# [[http_service.checks]] below is unvalidated by `fly config validate`
+# (Fly CLI is not installed on this dev machine) -- re-check at first deploy.
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "5s"
+    method = "GET"
+    path = "/healthz"
